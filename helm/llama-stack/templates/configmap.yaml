@@ -1,6 +1,7 @@
 {{- $root := . }}
+{{- $models := .Values.global.models | default .Values.models }}
 {{- $shields := list }}
-{{- range $key, $model := .Values.models }}
+{{- range $key, $model := $models }}
   {{- if and $model.enabled $model.registerShield }}
     {{- $shields = append $shields $model }}
   {{- end }}
@@ -26,7 +27,7 @@ data:
     - vector_io
     providers:
       inference:
-      {{- range $key, $model := .Values.models }}
+      {{- range $key, $model := $models }}
       {{- if $model.enabled }}
       - provider_id: {{ $key }}
         provider_type: remote::vllm
@@ -133,7 +134,7 @@ data:
       type: sqlite
       db_path: ${env.SQLITE_STORE_DIR:~/.llama/distributions/remote-vllm}/registry.db
     models:
-    {{- range $key, $model := .Values.models }}
+    {{- range $key, $model := $models }}
     {{- if $model.enabled }}
     - metadata: {}
       model_id: {{ $model.id }}
