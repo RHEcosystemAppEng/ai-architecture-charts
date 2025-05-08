@@ -1,4 +1,4 @@
-{{- $models := .Values.global.models | default .Values.models }}
+{{- $models := include "mergeModels" . | fromJson }}
 {{- range $key, $model := $models }}
 {{- if and $model.enabled (not $model.url) }}
 ---
