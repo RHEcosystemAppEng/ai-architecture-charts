@@ -1,5 +1,5 @@
 {{- $root := . }}
-{{- $models := .Values.global.models | default .Values.models }}
+{{- $models := include "mergeModels" . | fromJson }}
 {{- $shields := list }}
 {{- range $key, $model := $models }}
   {{- if and $model.enabled $model.registerShield }}

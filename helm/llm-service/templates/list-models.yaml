@@ -1,5 +1,5 @@
+{{- $models := include "mergeModels" . | fromJson }}
 {{- if .Values._debugListModels }}
-{{- $models := .Values.global.models | default .Values.models }}
 {{- range $key, $model := $models }}
 model: {{ $key }} ({{ $model.id }})
 {{- end }}
