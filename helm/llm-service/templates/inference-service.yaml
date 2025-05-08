@@ -1,6 +1,7 @@
 {{- $root := . }}
-{{- range $key, $model := $.Values.models }}
-{{- if $model.enabled }}
+{{- $models := .Values.global.models | default .Values.models }}
+{{- range $key, $model := $models }}
+{{- if and $model.enabled (not $model.url) }}
 ---
 apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService

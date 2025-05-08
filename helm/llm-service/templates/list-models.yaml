@@ -1,5 +1,6 @@
 {{- if .Values._debugListModels }}
-{{- range $key, $model := .Values.models }}
+{{- $models := .Values.global.models | default .Values.models }}
+{{- range $key, $model := $models }}
 model: {{ $key }} ({{ $model.id }})
 {{- end }}
 {{- end }}
