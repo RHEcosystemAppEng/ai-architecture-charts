@@ -32,7 +32,7 @@ data:
       - provider_id: {{ $key }}
         provider_type: remote::vllm
         config:
-          {{- if eq $model.url "local-ns" }}
+          {{- if not $model.url }}
           url: https://{{ $key }}.{{ $root.Release.Namespace }}.svc.cluster.local/v1
           {{- else }}
           url: {{ $model.url }}
