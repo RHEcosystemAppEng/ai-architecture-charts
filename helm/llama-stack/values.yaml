@@ -99,6 +99,6 @@ tolerations: []
 
 affinity: {}
 
-secrets: []
-models: []
-mcp-servers: []
+secrets: {}
+models: {}
+mcp-servers: {}
