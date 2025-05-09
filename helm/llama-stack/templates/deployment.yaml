@@ -1,3 +1,5 @@
+{{- $models := include "mergeModels" . | fromJson }}
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -33,6 +35,23 @@ spec:
       serviceAccountName: {{ include "llama-stack.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-models
+          image: curlimages/curl:7.85.0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              for url in {{ range $key, $model := $models }}{{- if $model.enabled }}{{ $model.url }}/models {{ end }}{{ end }}; do
+                echo "Waiting for $url..."
+                until curl -sf "$url"; do
+                  echo "Still waiting for $url..."
+                  sleep 10
+                done
+                echo "$url is ready."
+              done
+              echo "All services are up."
       containers:
         - name: {{ .Chart.Name }}
           securityContext:

@@ -33,11 +33,7 @@ data:
       - provider_id: {{ $key }}
         provider_type: remote::vllm
         config:
-          {{- if not $model.url }}
-          url: https://{{ $key }}.{{ $root.Release.Namespace }}.svc.cluster.local/v1
-          {{- else }}
           url: {{ $model.url }}
-          {{- end }}
           api_token: {{ $model.apiToken | default "fake" }}
           max_tokens: {{ $model.maxTokens | default 4096 }}
           tls_verify: ${env.VLLM_TLS_VERIFY:false}

@@ -62,10 +62,17 @@ Create the name of the service account to use
 {{- end }}
 
 {{- define "mergeModels" -}}
+  {{- $root := . }}
   {{- $globalModels := .Values.global | default dict }}
   {{- $globalModels := $globalModels.models | default dict }}
   {{- $localModels := .Values.models | default dict }}
   {{- $merged := merge $localModels $globalModels }}
+  {{- range $key, $model := $merged }}
+    {{- if not $model.url }}
+      {{- $url := printf "https://%s.%s.svc.cluster.local/v1" $key $root.Release.Namespace }}
+      {{- $_ := set $merged $key (merge $model (dict "url" $url)) }}
+    {{- end }}
+  {{- end }}
   {{- toJson $merged }}
 {{- end }}
 
