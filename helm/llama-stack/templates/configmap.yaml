@@ -1,5 +1,5 @@
 {{- $root := . }}
-{{- $models := include "mergeModels" . | fromJson }}
+{{- $models := include "llama-stack.mergeModels" . | fromJson }}
 {{- $mcpServers := include "mergeMcpServers" . | fromJson }}
 {{- $shields := list }}
 {{- range $key, $model := $models }}

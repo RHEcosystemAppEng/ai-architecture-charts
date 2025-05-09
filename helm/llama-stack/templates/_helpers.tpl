@@ -61,12 +61,12 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
-{{- define "mergeModels" -}}
+{{- define "llama-stack.mergeModels" -}}
   {{- $root := . }}
   {{- $globalModels := .Values.global | default dict }}
   {{- $globalModels := $globalModels.models | default dict }}
   {{- $localModels := .Values.models | default dict }}
-  {{- $merged := merge $localModels $globalModels }}
+  {{- $merged := merge $globalModels $localModels }}
   {{- range $key, $model := $merged }}
     {{- if not $model.url }}
       {{- $url := printf "https://%s.%s.svc.cluster.local/v1" $key $root.Release.Namespace }}
@@ -80,6 +80,6 @@ Create the name of the service account to use
   {{- $globalMcpServers := .Values.global | default dict }}
   {{- $globalMcpServers := index $globalMcpServers "mcp-servers" | default dict }}
   {{- $localMcpServers := index .Values "mcp-servers" | default dict }}
-  {{- $merged := merge $localMcpServers $globalMcpServers }}
+  {{- $merged := merge $globalMcpServers $localMcpServers }}
   {{- toJson $merged }}
 {{- end }}

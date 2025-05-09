@@ -1,5 +1,5 @@
 {{- $root := . }}
-{{- $models := include "mergeModels" . | fromJson }}
+{{- $models := include "llm-service.mergeModels" . | fromJson }}
 {{- range $key, $model := $models }}
 {{- if and $model.enabled (not $model.url) }}
 ---
@@ -25,8 +25,8 @@ spec:
         name: vLLM
       name: ""
       resources:
-      {{- if hasKey $model.inferenceService "resources" }}
-      {{- toYaml $model.inferenceService.resources | nindent 8 }}
+      {{- if hasKey $model "resources" }}
+      {{- toYaml $model.resources | nindent 8 }}
       {{- else }}
         limits:
           cpu: "2"
@@ -44,16 +44,20 @@ spec:
       - {{ $model.id }}
       - --served-model-name
       - {{ $model.id }}
-      {{- with $model.inferenceService.args }}
+      {{- with $model.args }}
         {{- toYaml . | nindent 6 }}
       {{- end }}
-      {{- with $model.inferenceService.env }}
+      {{- with $model.env }}
       env:
         {{- toYaml . | nindent 6 }}
       {{- end }}
-    {{- with $model.inferenceService.tolerations }}
     tolerations:
-      {{- toYaml . | nindent 4 }}
+    {{- if hasKey $model "tolerations" }}
+    {{- toYaml $model.tolerations | nindent 4 }}
+    {{- else }}
+    - key: nvidia.com/gpu
+      effect: NoSchedule
+      operator: Exists
     {{- end }}
 {{- end }}
 {{- end }}

@@ -1,4 +1,4 @@
-{{- $models := include "mergeModels" . | fromJson }}
+{{- $models := include "llm-service.mergeModels" . | fromJson }}
 {{- range $key, $model := $models }}
 {{- if and $model.enabled (not $model.url) }}
 ---
