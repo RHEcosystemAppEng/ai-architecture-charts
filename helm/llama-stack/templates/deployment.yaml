@@ -1,5 +1,4 @@
-{{- $models := include "mergeModels" . | fromJson }}
-
+{{- $models := include "llama-stack.mergeModels" . | fromJson }}
 ---
 apiVersion: apps/v1
 kind: Deployment
