@@ -23,6 +23,8 @@ podSecurityContext: {}
 
 securityContext: {}
 
+progressDeadlineSeconds: 3600
+
 strategy:
   type: Recreate
 
