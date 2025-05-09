@@ -68,3 +68,11 @@ Create the name of the service account to use
   {{- $merged := merge $localModels $globalModels }}
   {{- toJson $merged }}
 {{- end }}
+
+{{- define "mergeMcpServers" -}}
+  {{- $globalMcpServers := .Values.global | default dict }}
+  {{- $globalMcpServers := $globalMcpServers.models | default dict }}
+  {{- $localMcpServers := index .Values "mcp-servers" | default dict }}
+  {{- $merged := merge $localMcpServers $globalMcpServers }}
+  {{- toJson $merged }}
+{{- end }}
