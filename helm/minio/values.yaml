@@ -72,3 +72,52 @@ secret:
   password: minio_rag_password
   host: minio
   port: "9000"
+
+# MinIO client configuration for bucket creation
+minioClient:
+  # Image to use for bucket creation
+  image: "minio/mc:latest"
+  # MinIO client alias name
+  alias: "myminio"
+  # Initial delay before bucket operations (seconds)
+  initialDelay: 5
+
+# Buckets to create during post-install
+buckets:
+  - # Name of the bucket to create
+    name: "documents"
+    # Optional policy: none, download, upload, public
+    policy: "public"
+  # Add more buckets as needed
+  # - name: "another-bucket"
+  #   policy: "download"
+
+# GitHub repository containing PDF files for upload at post-install
+githubRepos:
+  name: "rag-notebooks"
+  repo: "https://github.com/rh-ai-kickstart/RAG.git"
+  paths:
+    - path: "notebooks"
+      destPrefix: ""
+
+# PDF uploader configuration
+uploader:
+  # Image for PDF upload job
+  image: "bitnami/git:latest"
+
+# Post-install check configuration
+postInstall:
+  # Initial delay before first check (seconds)
+  initialDelay: 10
+  # Maximum number of retry attempts
+  maxRetries: 30
+  # Interval between retries (seconds)
+  retryInterval: 5
+  # Host to check (defaults to service name if not set)
+  # host: "minio-api.example.com"
+  # Port to check (defaults to service.apiPort if not set)
+  # port: 9000
+  # Health endpoint to check
+  endpoint: "/minio/health/live"
+  # Protocol to use (http or https)
+  protocol: "http"

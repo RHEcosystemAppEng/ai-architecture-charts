@@ -1,0 +1,120 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "minio.fullname" . }}-pdf-upload"
+  labels:
+    {{- include "minio.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "25"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "minio.fullname" . }}-pdf-upload"
+      labels:
+        {{- include "minio.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: default
+      restartPolicy: Never
+      containers:
+      - name: pdf-uploader
+        image: {{ .Values.uploader.image | default "bitnami/git:latest" }}
+        securityContext:
+          runAsNonRoot: true
+        env:
+        - name: MINIO_SERVER
+          value: "{{ include "minio.fullname" . }}"
+        - name: MINIO_FQDN
+          value: "{{ include "minio.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+        - name: MINIO_PORT
+          value: "{{ .Values.service.apiPort }}"
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "minio.fullname" . }}
+              key: user
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "minio.fullname" . }}
+              key: password
+        - name: BUCKET_NAME
+          value: "{{ index .Values.buckets 0 "name" }}"
+        - name: MC_ALIAS
+          value: "{{ .Values.minioClient.alias | default "myminio" }}"
+        - name: HOME
+          value: "/tmp"
+        - name: GIT_REPO
+          value: "{{ .Values.githubRepos.repo }}"
+        - name: PDF_PATH
+          value: "{{ index .Values.githubRepos.paths 0 "path" }}"
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          set -e
+          WORK_DIR="/tmp/work"
+          MC_CONFIG_DIR="/tmp/.mc"
+          REPO_DIR="$WORK_DIR/repo"
+          PDF_SOURCE_DIR="$REPO_DIR/$PDF_PATH"
+          HOSTNAMES=("$MINIO_SERVER" "$(hostname -s)-$MINIO_SERVER" "$MINIO_FQDN")
+          
+          mkdir -p $WORK_DIR $MC_CONFIG_DIR $REPO_DIR
+          cd $WORK_DIR
+          
+          # Install MinIO client
+          curl -s -O https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+          
+          # Try different hostnames to connect to MinIO
+          CONNECTED=false
+          for hostname in "${HOSTNAMES[@]}"; do
+            if ./mc --quiet --config-dir=$MC_CONFIG_DIR alias set $MC_ALIAS http://${hostname}:${MINIO_PORT} ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} && 
+               ./mc --quiet --config-dir=$MC_CONFIG_DIR ls $MC_ALIAS/ &>/dev/null; then
+              MINIO_SERVER="${hostname}"
+              CONNECTED=true
+              echo "Connected to MinIO using hostname: ${hostname}"
+              break
+            fi
+          done
+          
+          # Clone repo and find PDFs even if connection failed
+          git clone --quiet --depth 1 $GIT_REPO $REPO_DIR
+          
+          if [ ! -d "$PDF_SOURCE_DIR" ]; then
+            echo "Error: Directory $PDF_SOURCE_DIR not found"
+            ls -la $REPO_DIR
+            exit 1
+          fi
+          
+          PDF_FILES=$(find $PDF_SOURCE_DIR -name "*.pdf" -type f)
+          if [ -z "$PDF_FILES" ]; then
+            echo "Error: No PDF files found in $PDF_SOURCE_DIR"
+            ls -la $PDF_SOURCE_DIR
+            exit 1
+          fi
+          
+          echo "Found PDF files:"
+          echo "$PDF_FILES"
+          
+          # Upload if connected
+          if [ "$CONNECTED" = true ]; then
+            echo "Uploading PDFs to bucket $BUCKET_NAME..."
+            for pdf_file in $PDF_FILES; do
+              filename=$(basename "$pdf_file")
+              dest_path="${{- with (index .Values.githubRepos.paths 0).destPrefix -}}
+                {{- if . -}}{{ . }}/{{- end -}}
+              {{- end -}}$filename"
+              if ./mc --quiet --config-dir=$MC_CONFIG_DIR cp "$pdf_file" "$MC_ALIAS/$BUCKET_NAME/$dest_path"; then
+                echo "Uploaded: $filename"
+              else
+                echo "Failed to upload: $filename"
+              fi
+            done
+            echo "Upload complete"
+          else
+            echo "MinIO connection failed - PDFs found but not uploaded"
+            for pdf_file in $PDF_FILES; do
+              echo "  - $(basename "$pdf_file")"
+            done
+          fi 
