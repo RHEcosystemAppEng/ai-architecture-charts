@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "minio.fullname" . }}-pre-install"
+  labels:
+    {{- include "minio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pre-install-hook
+    app.kubernetes.io/part-of: storage-layer
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-10"  # Very negative weight to ensure it runs early
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "minio.fullname" . }}-pre-install"
+      labels:
+        {{- include "minio.labels" . | nindent 8 }}
+        app.kubernetes.io/component: pre-install-hook
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: minio-pre-install
+        image: busybox:1.36.1
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Starting MinIO pre-install hook..."
+          echo "This hook runs with weight -10 to ensure MinIO installs before configure and ingestion pipelines"
+          echo "Creating storage dependency marker..."
+          
+          # This is a dummy job that just creates a marker for dependency ordering
+          # The important part is the hook annotation and weight
+          
+          echo "MinIO pre-install hook completed successfully!"
+          exit 0 
